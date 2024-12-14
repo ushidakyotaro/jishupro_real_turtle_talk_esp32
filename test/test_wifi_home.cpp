@@ -2,8 +2,8 @@
 
 //家のwifi
 #include "credentials.h"  // 認証情報をインクルード
-const char *home_ssid = HOME_SSID;
-const char *home_password = HOME_PASSWORD;
+const char *ssid = HOME_SSID;
+const char *password = HOME_PASSWORD;
 
 #define LED_BUILTIN 2
 
