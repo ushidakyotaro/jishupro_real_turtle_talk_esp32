@@ -11,6 +11,7 @@ This project aims to replicate the sea turtle character and turtle talk experien
 ## Hardware Requirements
 ### Main Components
 - ESP32 Development Board
+- ICS board produced by Kondo Science
 - Kondo Science Servo Motors (KRS Series)
 - Power Supply for Servo Motors
 - USB Cable for Programming
