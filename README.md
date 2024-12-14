@@ -52,9 +52,14 @@ This project aims to replicate the sea turtle character and turtle talk experien
    - Home WiFi credentials
    - UTokyo WiFi credentials (if applicable)
    ```cpp
-   #define HOME_SSID "your_home_ssid"
-   #define HOME_PASSWORD "your_home_password"
-   #define UTOKYO_USERNAME "your_username@wifi.u-tokyo.ac.jp"
+    // Home WiFi settings
+    #define HOME_SSID "your_home_ssid"
+    #define HOME_PASSWORD "your_home_password"
+
+    // UTokyo WiFi settings
+    #define UTOKYO_SSID "0000UTokyo"
+    #define UTOKYO_USERNAME "your_username@wifi.u-tokyo.ac.jp"
+    #define UTOKYO_PASSWORD "your_password"
    ```
 
 ### 3. Hardware Connection
