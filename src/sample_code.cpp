@@ -1,6 +1,4 @@
 #include <Arduino.h>
-// まだ作成していません。
-
 
 // put function declarations here:
 int myFunction(int, int);

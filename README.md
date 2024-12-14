@@ -37,17 +37,31 @@ This project aims to replicate the sea turtle character and turtle talk experien
 - Python 3.x for Client Application
 - Required PlatformIO Libraries (listed in platformio.ini)
 
+## Project Structure
+```plaintext
+<project>/
+├── include/             # Shared header files
+│   ├── credentials.h
+│   └── credentials_template.h
+├── src/                # Main source code
+│   └── main.cpp
+├── test/               # Test code
+│   ├── test_ics.cpp    # Servo motor test
+│   └── test_wifi_TCP.cpp # WiFi/TCP test
+└── platformio.ini
+```
+
 ## Setup Instructions
 ### 1. Development Environment Setup
 1. Install VSCode
 2. Install PlatformIO Extension in VSCode
 3. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/jishupro_real_turtle_talk_esp32.git
+   git clone https://github.com/ushidakyotaro/jishupro_real_turtle_talk_esp32.git
    ```
 
 ### 2. WiFi Configuration
-1. Copy `src/credentials_template.h` to `src/credentials.h`
+1. Copy `include/credentials_template.h` to `include/credentials.h`
 2. Edit `credentials.h` with your WiFi settings:
    - Home WiFi credentials
    - UTokyo WiFi credentials (if applicable)
@@ -70,20 +84,47 @@ This project aims to replicate the sea turtle character and turtle talk experien
 ### 4. Building and Uploading
 1. Open the project in VSCode with PlatformIO
 2. Select the appropriate environment:
-   - For WiFi testing: `esp32dev_wifi_test`
    - For main program: `esp32dev_main`
+   - For servo motor testing: `esp32dev_test_servo`
+   - For WiFi testing: `esp32dev_test_wifi`
 3. Click Upload button or use PlatformIO CLI:
    ```bash
-   pio run -t upload
-   ```
+   # For main program
+   pio run -e esp32dev_main -t upload
+   
+   # For servo testing
+   pio run -e esp32dev_test_servo -t upload
+   
+   # For WiFi testing
+   pio run -e esp32dev_test_wifi -t upload
 
-### 5. Testing Connection
-1. Monitor serial output in PlatformIO
-2. Check the assigned IP address
-3. Run the Python client script:
+## Testing
+### 1. Servo Motor Testing
+1. Upload the servo test program:
    ```bash
-   python client_test_wifi_TCP.py
-   ```
+   pio run -e esp32dev_test_servo -t upload
+    ```
+2. Monitor the serial output in PlatformIO
+3. Check if the servo motors move according to the test sequence
+
+### 2. WiFi Connection Testing
+
+1. Upload the WiFi test program:
+```bash
+pio run -e esp32dev_test_wifi -t upload
+```
+2. Monitor serial output in PlatformIO
+3. Check the assigned IP address
+4. Run the Python client script:
+```bash
+python client_test_wifi_TCP.py
+```
+
+5. LED indicators will show the connection status:
+    - Fast Blink (100ms): Client Connected
+    - Medium Blink (2500ms/500ms): WiFi Connected, No Client
+    - Slow Blink (3000ms): No WiFi Connection
+
 
 ## Usage
 - LED Status Indicators:
