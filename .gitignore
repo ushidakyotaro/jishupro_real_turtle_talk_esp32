@@ -1,8 +1,37 @@
+# PlatformIO
 .pio
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
+
+# VSCode
 .vscode/.browse.c_cpp.db*
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+*.code-workspace
 
-# Wifi credentials
-credentials.h
+# Credentials
+src/credentials.h
+
+# Build outputs
+build/
+*.o
+*.a
+*.elf
+*.hex
+*.bin
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Debug files
+*.log
+debug.txt
