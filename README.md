@@ -19,12 +19,12 @@ This project aims to replicate the sea turtle character and turtle talk experien
 | ID | Location | Movement | Angle Limits |
 |----|----------|----------|--------------|
 | 0  | Mouth    | Open/Close | TBD |
-| 1  | Right Pitch (Base) | Front/Back | TBD |
+| 1  | Right Pitch (Base) | Up/Down | TBD |
 | 2  | Right Roll | Roll | TBD |
-| 3  | Right Yaw | Left/Right | TBD |
-| 4  | Left Pitch | Front/Back | TBD |
+| 3  | Right Yaw | Front/Back | TBD |
+| 4  | Left Pitch | Up/Down | TBD |
 | 5  | Left Roll | Roll | TBD |
-| 6  | Left Yaw | Left/Right | TBD |
+| 6  | Left Yaw | Front/Back | TBD |
 
 #### Nice to Have (Future Implementation)
 | ID | Location | Movement | Angle Limits |
