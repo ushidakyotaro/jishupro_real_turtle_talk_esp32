@@ -131,7 +131,7 @@ void loop() {
         } else {
             // WiFi接続中だがクライアント未接続は普通の速さで点滅
             digitalWrite(LED_BUILTIN, HIGH);
-            delay(2500);
+            delay(2000);
             digitalWrite(LED_BUILTIN, LOW);
             delay(500);
         }

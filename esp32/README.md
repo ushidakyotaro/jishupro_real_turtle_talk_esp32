@@ -100,7 +100,7 @@ python client_test_wifi_TCP.py
 ## Usage
 - LED Status Indicators:
   - Fast Blink (100ms): Client Connected
-  - Medium Blink (2500ms/500ms): WiFi Connected, No Client
+  - Medium Blink (2000ms/500ms): WiFi Connected, No Client
   - Slow Blink (3000ms): No WiFi Connection
 
 ## Troubleshooting
