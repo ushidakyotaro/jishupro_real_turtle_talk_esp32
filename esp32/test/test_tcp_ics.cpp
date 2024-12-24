@@ -55,14 +55,20 @@ void loop() {
                        case CrushMode::INIT_POSE:
                            // 角度0度に設定
                            krs.setPos(0, krs.degPos(0.0));
+
+                           krs.setPos(1, krs.degPos(0.0));
                            break;
                            
                        default:
                            // 90度 → -90度の繰り返し
                            krs.setPos(0, krs.degPos100(9000));
+                           krs.setPos(1, krs.degPos100(9000));
                            delay(500);
                            krs.setPos(0, krs.degPos(-90.0));
+                           krs.setPos(1, krs.degPos(-90.0));
                            delay(500);
+
+                        
                            break;
                    }
                }
