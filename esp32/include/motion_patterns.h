@@ -6,7 +6,11 @@
 struct WingMotionPoint {
     double timeRatio;   // 0.0 ~ 1.0
     double angleRatio;  // -1.0 ~ 1.0
+    bool operator==(const WingMotionPoint& other) const {
+        return timeRatio == other.timeRatio && angleRatio == other.angleRatio;
+    }
 };
+
 
 struct SplineCoefficients {
     std::vector<double> a;  // 3次項の係数

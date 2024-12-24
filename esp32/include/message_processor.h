@@ -35,7 +35,7 @@ public:
     CrushMode getCurrentMode() const { return currentMode; }
     WingUpMode getCurrentWingMode() const { return currentWingMode; }
     SwimParameters getCurrentParams() const { return currentParams; }
-    bool isMouthOpen() const { return mouthOpen; }
+    bool getMouthOpen() const { return isMouthOpen; }
 
 private:
     float bytesToFloat(const uint8_t* bytes);
@@ -44,5 +44,5 @@ private:
     SwimParameters currentParams;
     CrushMode currentMode;
     WingUpMode currentWingMode;
-    bool mouthOpen;
+    bool isMouthOpen;
 };
