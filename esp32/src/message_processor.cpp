@@ -4,7 +4,7 @@
 MessageProcessor::MessageProcessor() 
     : currentMode(CrushMode::INIT_POSE)
     , currentWingMode(WingUpMode::BOTH)
-    , mouthOpen(false) {
+    , isMouthOpen(false) {
 }
 
 float MessageProcessor::bytesToFloat(const uint8_t* bytes) {
@@ -93,7 +93,7 @@ bool MessageProcessor::processMessage(WiFiClient& client) {
             break;
 
         case 0x04: // 口制御
-            mouthOpen = (subCommand & 0x01) != 0;
+            isMouthOpen = (subCommand & 0x01) != 0;
             sendResponse(client, 0x00);
             break;
 

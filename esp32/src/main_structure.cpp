@@ -1,3 +1,4 @@
+//src/main_structure.cpp
 #include <Arduino.h>
 #include <IcsHardSerialClass.h>
 
@@ -49,7 +50,7 @@ struct CycleTimer {
     }
     // 既存のメソッドは維持
 };
-};
+
 
 
 class CrushMain {
