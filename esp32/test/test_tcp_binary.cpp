@@ -27,6 +27,7 @@ void loop() {
            
            while (client.connected()) {
                 wifiConnection.handleConnection();
+                
                if (messageProcessor.processMessage(client)) {
                    // メッセージ処理が成功した場合の処理
                    CrushMode mode = messageProcessor.getCurrentMode();
