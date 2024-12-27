@@ -8,13 +8,17 @@ WiFiConnection wifiConnection;
 MessageProcessor messageProcessor;
 
 // サーボ設定
-const byte EN_PIN = 2;
-const long BAUDRATE = 115200;
-const int TIMEOUT = 1000;
-IcsHardSerialClass krs(&Serial, EN_PIN, BAUDRATE, TIMEOUT);
+const byte EN_PIN = 16;
+const byte RX_PIN = 17;
+const byte TX_PIN = 5;
+//const long BAUDRATE = 115200;
+const long BAUDRATE = 1250000;
+const int TIMEOUT = 20;
+
+IcsHardSerialClass krs(&Serial2, EN_PIN, BAUDRATE, TIMEOUT);
 
 void setup() {
-   Serial.begin(115200);
+   Serial2.begin(BAUDRATE, SERIAL_8E1, RX_PIN, TX_PIN, false, TIMEOUT);
    krs.begin();
    
    if (wifiConnection.begin()) {
@@ -35,6 +39,7 @@ void loop() {
            
            while (client.connected()) {
                 wifiConnection.handleConnection();
+            //if (client.connected()) {// 変更
 
                if (messageProcessor.processMessage(client)) {
                     CrushMode mode = messageProcessor.getCurrentMode();
@@ -48,21 +53,43 @@ void loop() {
                        params.yRate);
                    
                    switch(mode) {
+
+                        int pos;
+
                        case CrushMode::SERVO_OFF:
                            // サーボオフ
+
                            break;
                            
                        case CrushMode::INIT_POSE:
                            // 角度0度に設定
-                           krs.setPos(0, krs.degPos(0.0));
+                           
+                        pos = krs.degPos(0);  
+                        for (int i = 0; i < 7; ++i) {
+                            krs.setPos(i, pos);//変換したデータをID:0に送る
+                        }
                            break;
                            
                        default:
-                           // 90度 → -90度の繰り返し
-                           krs.setPos(0, krs.degPos100(9000));
-                           delay(500);
-                           krs.setPos(0, krs.degPos(-90.0));
-                           delay(500);
+                            int pos_i;
+                            int pos_f;
+                            
+                        pos_i = krs.degPos(45);  //90 x100deg をポジションデータに変換
+                        for (int i = 0; i < 5; ++i) {
+                            while (krs.setPos(i, pos_i) == -1) {
+                                delay(1);
+                            }
+                        }
+                            delay(500);
+                            
+                        pos_i = krs.degPos(-45);  //90 x100deg をポジションデータに変換
+                        for (int i = 0; i < 5; ++i) {
+                                               while (krs.setPos(i, pos_i) == -1) {
+                                delay(1);
+                            }
+         
+                                }
+                            delay(2000);
                            break;
                    }
                }
