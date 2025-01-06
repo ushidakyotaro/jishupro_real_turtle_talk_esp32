@@ -198,34 +198,36 @@ def send_swim_command(command: SwimCommand):
         messagebox.showerror("エラー", f"{command.name} コマンド送信に失敗しました")
 
 
+# def select_location():
+#     def set_home():
+#         global client
+#         #client = CrushClient("192.168.11.9")  # 家のIPアドレス
+#         client = CrushClient("10.1.100.158")
+#         location_window.destroy()
+#         #connect_to_esp32()
+
+#     def set_school():
+#         global client
+#         client = CrushClient("10.100.82.80")  # 学校のIPアドレス
+#         location_window.destroy()
+#         #connect_to_esp32()
+
+#     location_window = tk.Tk()
+#     location_window.title("作業場所の選択")
+#     location_window.geometry("300x150")
+
+#     tk.Label(location_window, text="作業場所を選んでください", font=("Helvetica", 12)).pack(pady=10)
+
+#     tk.Button(location_window, text="家", command=set_home, width=15).pack(pady=5)
+#     tk.Button(location_window, text="学校", command=set_school, width=15).pack(pady=5)
+
+#     location_window.mainloop()
+
 def select_location():
     def set_home():
         global client
-        client = CrushClient("192.168.11.9")  # 家のIPアドレス
-        location_window.destroy()
-        connect_to_esp32()
-
-    def set_school():
-        global client
-        client = CrushClient("10.100.82.80")  # 学校のIPアドレス
-        location_window.destroy()
-        connect_to_esp32()
-
-    location_window = tk.Tk()
-    location_window.title("作業場所の選択")
-    location_window.geometry("300x150")
-
-    tk.Label(location_window, text="作業場所を選んでください", font=("Helvetica", 12)).pack(pady=10)
-
-    tk.Button(location_window, text="家", command=set_home, width=15).pack(pady=5)
-    tk.Button(location_window, text="学校", command=set_school, width=15).pack(pady=5)
-
-    location_window.mainloop()
-
-def select_location():
-    def set_home():
-        global client
-        client = CrushClient("192.168.11.9")  # 家のIPアドレス
+        #client = CrushClient("192.168.11.9")  # 家のIPアドレス
+        client = CrushClient("10.1.100.138")  # 家のIPアドレス
         location_window.destroy()
 
     def set_school():

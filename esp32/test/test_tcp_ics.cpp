@@ -20,6 +20,7 @@ IcsHardSerialClass krs(&Serial2, EN_PIN, BAUDRATE, TIMEOUT);
 void setup() {
    Serial2.begin(BAUDRATE, SERIAL_8E1, RX_PIN, TX_PIN, false, TIMEOUT);
    krs.begin();
+   Serial.begin(115200);
    
    if (wifiConnection.begin()) {
        Serial.println("Connected to WiFi");
@@ -87,8 +88,7 @@ void loop() {
                                                while (krs.setPos(i, pos_i) == -1) {
                                 delay(1);
                             }
-         
-                                }
+                        }
                             delay(2000);
                            break;
                    }
