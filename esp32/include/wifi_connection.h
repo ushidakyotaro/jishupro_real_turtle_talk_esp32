@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 #include <WiFi.h>
 #include "esp_wpa2.h"
 #include "credentials.h"

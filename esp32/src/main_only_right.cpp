@@ -9,9 +9,9 @@ const byte EN_PIN = 16;
 const byte RX_PIN = 17;
 const byte TX_PIN = 5;
 const long BAUDRATE = 1250000;
-const int TIMEOUT = 20;
+const int TIMEOUT = 1000;
 
-const int SERVO_NUM = 7;
+const int SERVO_NUM = 4; //右のみ
 
 // エラーステータス
 struct ErrorStatus {
@@ -69,14 +69,7 @@ public:
     }
 
     static void initializeSystem() {
-        // // LED初期化
-        // pinMode(LED_BUILTIN, OUTPUT);
-        // digitalWrite(LED_BUILTIN, LOW);
-
-        //wifiのシリアル通信
         Serial.begin(115200);
-        //モータのシリアル通信
-         Serial2.begin(BAUDRATE, SERIAL_8E1, RX_PIN, TX_PIN, false, TIMEOUT);
         krs.begin();
         
         if (wifiConnection.begin()) {
@@ -85,31 +78,17 @@ public:
         }
     }
 
-virtual void loop() {
-    wifiConnection.handleConnection();  // LED状態の更新を含む
-    
-    if (wifiConnection.isConnected()) {
-        WiFiClient client = wifiConnection.getServer()->available();
-        
-        if (client) {
-            Serial.println("Client connected");
-            wifiConnection.setClientConnected(true);
-            
-            while (client.connected()) {
-                wifiConnection.handleConnection();
-                
-                if (messageProcessor.processMessage(client)) {
-                    updateMotion();  // モーション更新
-                }
+    virtual void loop() {
+        if (wifiConnection.isConnected()) {
+            WiFiClient client = wifiConnection.getServer()->available();
+            if (client && client.connected()) {
+                messageProcessor.processMessage(client);
             }
-            
-            wifiConnection.setClientConnected(false);
-            Serial.println("Client disconnected");
+            updateMotion();
+        } else {
+            handleWifiDisconnection();
         }
-    } else {
-        handleWifiDisconnection();
     }
-}
 
 protected:
     void setServoOff() {
@@ -128,21 +107,17 @@ protected:
     }
 
     void handleWifiDisconnection() {
-        static unsigned long lastReconnectAttempt = 0;
-        const unsigned long RECONNECT_INTERVAL = 5000;  // 5秒ごとに再接続を試みる
-        
-        unsigned long currentTime = millis();
-        if (currentTime - lastReconnectAttempt >= RECONNECT_INTERVAL) {
-            if (wifiConnection.begin()) {
-                Serial.println("WiFi Reconnected");
+        if (!errorStatus.wifiDisconnected) {
+            errorStatus.wifiDisconnected = true;
+            if (currentMode != CrushMode::EMERGENCY_SURFACE) {
+                currentMode = CrushMode::EMERGENCY_SURFACE;
             }
-            lastReconnectAttempt = currentTime;
         }
     }
 };
 
 // 静的メンバの定義
-IcsHardSerialClass CrushMain::krs(&Serial2, EN_PIN, BAUDRATE, TIMEOUT);
+IcsHardSerialClass CrushMain::krs(&Serial, EN_PIN, BAUDRATE, TIMEOUT);
 WiFiConnection CrushMain::wifiConnection;
 MessageProcessor CrushMain::messageProcessor;
 
@@ -259,8 +234,8 @@ private:
         double angle1 = params.maxAngleDeg * sin(wingRad) * sin(TWO_PI * timeRatio);
         double angle2 = params.maxAngleDeg * cos(wingRad) * sin(TWO_PI * timeRatio);
 
-        int positions[SERVO_NUM] = {0, 0, 0, 0, 0, 0, 0};
-        int speeds[SERVO_NUM] = {127, 127, 127, 127, 127, 127, 127};
+        int positions[SERVO_NUM] = {0, 0, 0, 0}; //右のみ
+        int speeds[SERVO_NUM] = {127, 127, 127, 127}; //右のみ
 
             // 速度計算
         double speedFactor = abs(cos(TWO_PI * timeRatio));
@@ -462,7 +437,7 @@ private:
 
 class CrushMouth : public CrushMain {
 private:
-    const int MOUTH_SERVO_ID = 0;
+    const int MOUTH_SERVO_ID = 1;
     const double MOUTH_OPEN_ANGLE = 30.0;
     const double MOUTH_CLOSE_ANGLE = 0.0;
     unsigned long lastMouthUpdate = 0;
