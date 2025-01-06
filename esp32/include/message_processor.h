@@ -22,6 +22,7 @@ struct SwimParameters {
     float wingDeg;
     float maxAngleDeg;
     float yRate;
+    bool isBackward;
     SwimParameters() : periodSec(0), wingDeg(0), maxAngleDeg(0), yRate(0) {}
 };
 

@@ -39,10 +39,10 @@ bool MessageProcessor::processMessage(WiFiClient& client) {
             break;
 
         case 0x02: // 遊泳パラメータ設定
-            if (client.available() >= 9) {
-                uint8_t buffer[9];
-                size_t bytesRead = client.readBytes(buffer, 9);
-                if (bytesRead != 9) {
+            if (client.available() >= 10) {
+                uint8_t buffer[10];
+                size_t bytesRead = client.readBytes(buffer, 10);
+                if (bytesRead != 10) {
                     sendResponse(client, 0xE3);
                     break;
                 }
@@ -51,6 +51,7 @@ bool MessageProcessor::processMessage(WiFiClient& client) {
                 float wingDeg = bytesToInt16(buffer + 4) / 10.0f;
                 float maxAngle = bytesToInt16(buffer + 6) / 10.0f;
                 float yRate = static_cast<int8_t>(buffer[8]) / 100.0f;
+                bool isBackward = buffer[9] != 0;
 
                 if (wingDeg >= -45.0 && wingDeg <= 45.0 &&
                     maxAngle >= -45.0 && maxAngle <= 45.0 &&
@@ -61,6 +62,7 @@ bool MessageProcessor::processMessage(WiFiClient& client) {
                     currentParams.wingDeg = wingDeg;
                     currentParams.maxAngleDeg = maxAngle;
                     currentParams.yRate = yRate;
+                    currentParams.isBackward = isBackward;
                     sendResponse(client, 0x00);
                 } else {
                     sendResponse(client, 0xE2);
