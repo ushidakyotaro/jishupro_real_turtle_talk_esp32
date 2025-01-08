@@ -5,6 +5,7 @@ from typing import Optional
 from dataclasses import dataclass
 import struct
 import enum
+import time
 
 
 # CrushMode Enum
@@ -50,37 +51,81 @@ class CrushClient:
         self.port = port
         self.socket = None
         self.connected = False
+        self.connect_timeout = 5.0  # 接続タイムアウト: 5秒
+        self.operation_timeout = 2.0  # 操作タイムアウト: 2秒
 
     def connect(self) -> bool:
+        self.disconnect()
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((self.host, self.port))
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # 接続実行
+            self.socket.settimeout(self.connect_timeout)
             self.connected = True
             return True
+        except socket.timeout:
+            print("Connection timeout")
+            self.cleanup()
+            return False
+        except ConnectionRefusedError:
+            print("Connection refused - server might not be ready")
+            self.cleanup()
+            return False
         except Exception as e:
             print(f"Connection error: {e}")
+            self.cleanup()
             return False
 
     def disconnect(self):
         if self.socket:
-            self.socket.close()
-            self.connected = False
+            try:
+                self.socket.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
+            try:
+                self.socket.close()
+            except:
+                pass
+            self.socket = None
+        self.connected = False
+
+    def cleanup(self):
+        """リソースのクリーンアップ"""
+        self.disconnect()
+        time.sleep(0.1)  # 短い待機時間を設定
 
     def _send_message(self, message: bytes) -> Optional[bytes]:
-        if not self.connected:
+        if not self.connected or not self.socket:
             print("Not connected to ESP32")
             return None
+
         try:
+            self.socket.settimeout(self.operation_timeout)
             self.socket.sendall(message)
-            return self.socket.recv(1024)
+            response = self.socket.recv(1024)
+            return response
+            
+        except socket.timeout:
+            print("Operation timeout")
+            self.cleanup()
+            return None
+        except ConnectionResetError:
+            print("Connection reset by peer")
+            self.cleanup()
+            return None
         except Exception as e:
             print(f"Communication error: {e}")
+            self.cleanup()
             return None
 
     def set_mode(self, mode: CrushMode) -> bool:
         message = bytes([0x10 | mode.value])
         response = self._send_message(message)
-        return response and response[0] & 0x80 == 0
+        if not response:
+            self.cleanup()
+            return False
+        return response[0] & 0x80 == 0
 
     def send_swim_command(self, command: SwimCommand) -> bool:
         message = bytes([0x50 | command.value])
@@ -88,21 +133,18 @@ class CrushClient:
         return response and response[0] & 0x80 == 0
 
     def send_parameters(self, params: SwimParameters) -> bool:
-        # パラメータを送信する処理を実装
-            # パラメータをバイト列に変換
         period_bytes = struct.pack('f', params.period_sec)
         wing_bytes = struct.pack('h', int(params.wing_deg * 10))
         max_angle_bytes = struct.pack('h', int(params.max_angle_deg * 10))
         y_rate_byte = bytes([int(params.y_rate * 100)])
         backward_byte = bytes([1 if params.isBackward else 0])
         
-        # メッセージを作成
         message = bytes([0x20]) + period_bytes + wing_bytes + max_angle_bytes + y_rate_byte + backward_byte
-        
-        # 送信
         response = self._send_message(message)
-        return response and response[0] & 0x80 == 0
-
+        if not response:
+            self.cleanup()
+            return False
+        return response[0] & 0x80 == 0
 
     def get_status(self) -> Optional[dict]:
         message = bytes([0xF0])
@@ -110,16 +152,20 @@ class CrushClient:
         if not response or len(response) < 8:
             return None
 
-        mode = response[0]
-        current_angle = struct.unpack('h', response[1:3])[0] / 10.0
-        error_flags = response[3]
+        try:
+            mode = response[0]
+            current_angle = struct.unpack('h', response[1:3])[0] / 10.0
+            error_flags = response[3]
 
-        return {
-            "mode": CrushMode(mode),
-            "current_angle": current_angle,
-            "wifi_disconnected": bool(error_flags & 0x01),
-            "angle_out_of_range": bool(error_flags & 0x02),
-        }
+            return {
+                "mode": CrushMode(mode),
+                "current_angle": current_angle,
+                "wifi_disconnected": bool(error_flags & 0x01),
+                "angle_out_of_range": bool(error_flags & 0x02),
+            }
+        except Exception as e:
+            print(f"Status parsing error: {e}")
+            return None
 
 
 class RobotControlUI:
@@ -130,6 +176,8 @@ class RobotControlUI:
         
         # クライアントの初期化
         self.client = None
+        self.connection_retry_count = 0
+        self.max_connection_retries = 3
         
         # メインフレームの作成
         self.main_frame = ttk.Frame(root)
@@ -252,8 +300,10 @@ class RobotControlUI:
     def update_status(self):
         if not self.client or not self.client.connected:
             self.status_label.config(text="未接続")
+            # 再接続を試みる
+            self.handle_disconnection()
             return
-            
+
         status = self.client.get_status()
         if status:
             self.status_label.config(
@@ -265,7 +315,8 @@ class RobotControlUI:
                 )
             )
         else:
-            self.status_label.config(text="ステータスの取得に失敗しました")
+            self.status_label.config(text="ステータスの取得に失敗")
+            self.handle_disconnection()
 
     def select_location(self):
         location_window = tk.Toplevel(self.root)
@@ -287,13 +338,24 @@ class RobotControlUI:
         ttk.Button(location_window, text="学校", command=set_school).pack(pady=5)
 
     def connect_to_esp32(self):
+        if self.connection_retry_count >= self.max_connection_retries:
+            messagebox.showerror("接続エラー", "接続の最大試行回数を超えました。\nプログラムを再起動してください。")
+            self.root.quit()
+            return
+
         if self.client.connect():
+            self.connection_retry_count = 0
             messagebox.showinfo("接続成功", "ESP32に接続しました")
             self.start_status_update()
         else:
-            retry = messagebox.askretrycancel("接続エラー", "ESP32に接続できませんでした。再試行しますか？")
+            self.connection_retry_count += 1
+            retry = messagebox.askretrycancel(
+                "接続エラー", 
+                f"ESP32に接続できませんでした。\n試行回数: {self.connection_retry_count}/{self.max_connection_retries}\n再試行しますか？"
+            )
             if retry:
-                self.connect_to_esp32()
+                # 再試行前に少し待機
+                self.root.after(1000, self.connect_to_esp32)
             else:
                 self.root.quit()
 
@@ -303,10 +365,28 @@ class RobotControlUI:
             self.root.after(2000, update)
         update()
 
+    def handle_disconnection(self):
+        """接続が切れた際の処理"""
+        if self.client:
+            self.client.cleanup()
+            retry = messagebox.askretrycancel("接続エラー", "接続が切れました。再接続しますか？")
+            if retry:
+                self.connection_retry_count = 0
+                self.connect_to_esp32()
+            else:
+                self.root.quit()
+
+    def on_closing(self):
+        """ウィンドウが閉じられる際の処理"""
+        if self.client:
+            self.client.disconnect()
+        self.root.destroy()
+
 
 def main():
     root = tk.Tk()
     app = RobotControlUI(root)
+    root.protocol("WM_DELETE_WINDOW", app.on_closing)  # 終了時の処理を設定
     root.mainloop()
 
 
