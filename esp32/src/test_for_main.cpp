@@ -61,8 +61,8 @@ protected:
     CrushMode previousMode;
     ErrorStatus errorStatus;
     
-    const double MAX_WING_ANGLE = 30.0;
-    const double MIN_WING_ANGLE = -30.0;
+    const double MAX_WING_ANGLE = 25.0;
+    const double MIN_WING_ANGLE = -25.0;
     const unsigned long WIFI_RECONNECT_INTERVAL = 5000;
     const unsigned long MODE_TRANSITION_DELAY = 1000;
     
@@ -108,6 +108,10 @@ public:
     }
 
     virtual void loop() {
+        static unsigned long lastClientActivity = 0;
+        const unsigned long CLIENT_TIMEOUT = 5000;  // 5秒のタイムアウト
+        static bool isTimeout = false;
+
         wifiConnection.handleConnection();
 
         
@@ -117,11 +121,27 @@ public:
             if (client) {
                 Serial.println("Client connected");
                 wifiConnection.setClientConnected(true);
+                lastClientActivity = millis();
+                isTimeout = false;
                 
                 // test_tcp_ics.cppと同様の処理構造に修正
                 while (client.connected()) {
                     wifiConnection.handleConnection();
+
+                    // タイムアウトチェック
+                    if (millis() - lastClientActivity > CLIENT_TIMEOUT) {
+                        if (!isTimeout) {
+                            Serial.println("Client timeout - switching to SERVO_OFF");
+                            currentMode = CrushMode::SERVO_OFF;
+                            setServoOff();
+                            isTimeout = true;
+                        }
+                    }       
+
                     if (messageProcessor.processMessage(client)) {
+                        lastClientActivity = millis();  // メッセージを受信したら時間を更新
+                        isTimeout = false; 
+
                         // メッセージを受信したときだけモーション更新
                         auto mode = messageProcessor.getCurrentMode();
                         auto params = messageProcessor.getCurrentParams();
@@ -138,7 +158,7 @@ public:
                     }
 
                     // 連続的なモーション更新
-                    if (currentMode == CrushMode::STAY || currentMode == CrushMode::SWIM) {
+                    if (!isTimeout && (currentMode == CrushMode::STAY || currentMode == CrushMode::SWIM)) {
                         unsigned long currentTime = millis();
                         if (currentTime - lastMotionUpdate >= MOTION_UPDATE_INTERVAL) {
                             updateMotion();
@@ -183,6 +203,7 @@ protected:
             lastReconnectAttempt = currentTime;
         }
     }
+    
 };
 
 // 静的メンバの定義
@@ -196,7 +217,7 @@ private:
     SplineInterpolator splineInterpolator;
     std::vector<WingMotionPoint> currentPattern;
     CycleTimer cycleTimer;
-    const int BODY_SERVO_ID = 0;
+    //const int BODY_SERVO_ID = 0;
     unsigned long lastUpdateTime = 0;
     
     
@@ -258,6 +279,7 @@ protected:
 private:
     // void sendVec2ServoPos(int posVec[SERVO_NUM], int speedVec[SERVO_NUM]){
     //     static int defaultSpeed[SERVO_NUM] = {127, 127, 127, 127, 127, 127, 127};
+
     //     if (speedVec == nullptr) {
     //         speedVec = defaultSpeed;
     //     }
@@ -276,7 +298,8 @@ private:
     // }
 
     void sendVec2ServoPos(int posVec[SERVO_NUM], int speedVec[SERVO_NUM]){
-        static int defaultSpeed[SERVO_NUM] = {127, 127, 127, 127, 127, 127, 127};
+        //static int defaultSpeed[SERVO_NUM] = {127, 127, 127, 127, 127, 127, 127};
+        static int defaultSpeed[SERVO_NUM] = {50, 50, 50, 50, 50, 50, 50};
         if (speedVec == nullptr) {
             speedVec = defaultSpeed;
         }
@@ -284,7 +307,8 @@ private:
         // 各サーボについて最大5回までリトライ
         const int MAX_RETRY = 5;
         
-        for (int i = 0; i < SERVO_NUM; ++i) {
+        for (int i = 1; i < SERVO_NUM; ++i) {
+        //for (int i = 0; i < SERVO_NUM; ++i) {
             // スピード設定
             int retryCount = 0;
             bool speedSet = false;
@@ -320,14 +344,23 @@ private:
         }
     }
 
-    void handleInitMode() {
+    // void handleInitMode() {
+    //     // if (currentMode == CrushMode::INIT_POSE) {
+    //         int pos = krs.degPos(0);
+    //         for (int i = 1; i < SERVO_NUM; ++i) {
+    //             while (krs.setPos(i, pos) == -1) {
+    //                 delay(1);
+    //             }
+    //         }
+    //     }
+        void handleInitMode() {
         // if (currentMode == CrushMode::INIT_POSE) {
+            int positions[SERVO_NUM];
             int pos = krs.degPos(0);
-            for (int i = 0; i < SERVO_NUM; ++i) {
-                while (krs.setPos(i, pos) == -1) {
-                    delay(1);
-                }
+            for (int i = 1; i < SERVO_NUM; ++i) {
+                positions[i] = pos;
             }
+            sendVec2ServoPos(positions, nullptr);
         }
 
     // void handleStayMode(const SwimParameters& params) {
@@ -360,8 +393,8 @@ private:
 
     void handleStayMode(const SwimParameters& params) {
         // 固定値の設定
-        const double PERIOD_MS = 2000.0;  // 2秒周期
-        const double MAX_ANGLE = 30.0;    // 振幅±30度
+        const double PERIOD_MS = 3000.0;  // 3秒周期
+        const double MAX_ANGLE = 20.0;    // 振幅±20度
         
         // 現在の時間から角度を計算
         unsigned long currentTime = millis();
@@ -379,13 +412,13 @@ private:
         // positions[i] = krs.degPos(currentAngle);
 
             // wingdegをラジアンに変換
-            double WING_DEG = 30.0;
+            double WING_DEG = 0.0;
 
             double wingRad = WING_DEG * PI / 180.0;
             
             // サーボの角度を計算
-            double angle1 = currentAngle * sin(wingRad);  // サーボ1,4用
-            double angle2 = currentAngle * cos(wingRad);  // サーボ2,5用
+            double angle1 = currentAngle * cos(wingRad);  // サーボ1,4用
+            double angle2 = currentAngle * sin(wingRad);  // サーボ2,5用
         
             // 各サーボに角度を設定
         positions[1] = krs.degPos(angle1);  // 右の上下
@@ -459,11 +492,11 @@ private:
 void handleSwimMode(const SwimParameters& params) {
     // 固定値の設定
     const double PERIOD_MS = 2000.0;      // 2秒周期
-    const double MAX_ANGLE = 30.0;        // 振幅±30度
-    const double WING_DEG = 30.0;         // 翼角度
-    const double RIGHT_RATE = 1.2;        // 右の振幅率（1.0より大きいと右に曲がる）
-    const double LEFT_RATE = 0.8;         // 左の振幅率
-    const double WING_ROTATION = 45.0;    // 翼の回転角度
+    const double MAX_ANGLE = 20.0;        // 振幅±30度
+    const double WING_DEG = 20.0;         // 翼角度
+    const double RIGHT_RATE = 1.0; //1.2       // 右の振幅率（1.0より大きいと右に曲がる）
+    const double LEFT_RATE = 1.0;  //0.8       // 左の振幅率
+    const double WING_ROTATION = 30.0;    // 翼の回転角度
     
     // 現在の時間から基本角度を計算
     unsigned long currentTime = millis();
@@ -474,10 +507,10 @@ void handleSwimMode(const SwimParameters& params) {
     double wingRad = WING_DEG * PI / 180.0;
     
     // 左右の振幅調整
-    double rightAngle1 = baseAngle * RIGHT_RATE * sin(wingRad);
-    double rightAngle2 = baseAngle * RIGHT_RATE * cos(wingRad);
-    double leftAngle1 = baseAngle * LEFT_RATE * sin(wingRad);
-    double leftAngle2 = baseAngle * LEFT_RATE * cos(wingRad);
+    double rightAngle1 = baseAngle * RIGHT_RATE * cos(wingRad);
+    double rightAngle2 = baseAngle * RIGHT_RATE * sin(wingRad);
+    double leftAngle1 = baseAngle * LEFT_RATE * cos(wingRad);
+    double leftAngle2 = baseAngle * LEFT_RATE * sin(wingRad);
     
     // 3番と6番サーボの制御（前進動作用）
     double rotationAngle = 0.0;
@@ -492,8 +525,8 @@ void handleSwimMode(const SwimParameters& params) {
     positions[1] = krs.degPos(rightAngle1);   // 右の上下
     positions[2] = krs.degPos(rightAngle2);   // 右の前後
     positions[3] = krs.degPos(rotationAngle); // 右の回転
-    positions[4] = krs.degPos(-leftAngle1);   // 左の上下
-    positions[5] = krs.degPos(-leftAngle2);   // 左の前後
+    positions[4] = krs.degPos(leftAngle1);   // 左の上下
+    positions[5] = krs.degPos(leftAngle2);   // 左の前後
     positions[6] = krs.degPos(rotationAngle); // 左の回転
     
     sendVec2ServoPos(positions, speeds);
@@ -584,9 +617,8 @@ void handleSwimMode(const SwimParameters& params) {
 void handleRaiseMode(const SwimParameters& params) {
     unsigned long currentTime = millis();
     int positions[SERVO_NUM] = {0};  // すべて0で初期化
-    //int speeds[SERVO_NUM] = {127, 127, 80, 127, 127, 80, 127};  // servo2,5のみ速度80
-    int speeds[SERVO_NUM] = {127, 80, 127, 127, 80, 127}; 
-
+    int speeds[SERVO_NUM] = {127, 127, 40, 127, 127, 40, 127};  // servo2,5のみ速度80
+    
     // servo1,3,4,6は0度
     positions[1] = krs.degPos(0);
     positions[3] = krs.degPos(0);
@@ -594,8 +626,8 @@ void handleRaiseMode(const SwimParameters& params) {
     positions[6] = krs.degPos(0);
     
     // servo2,5は30度
-    positions[2] = krs.degPos(30);
-    positions[5] = krs.degPos(30);
+    positions[2] = krs.degPos(20);
+    positions[5] = krs.degPos(-20);
     
     sendVec2ServoPos(positions, speeds);
     
@@ -677,29 +709,29 @@ void handleRaiseMode(const SwimParameters& params) {
     }
 };
 
-class CrushMouth : public CrushMain {
-private:
-    const int MOUTH_SERVO_ID = 0;
-    const double MOUTH_OPEN_ANGLE = 30.0;
-    const double MOUTH_CLOSE_ANGLE = 0.0;
-    unsigned long lastMouthUpdate = 0;
-    const unsigned long MOUTH_UPDATE_INTERVAL = 100;
+// class CrushMouth : public CrushMain {
+// private:
+//     const int MOUTH_SERVO_ID = 0;
+//     const double MOUTH_OPEN_ANGLE = 30.0;
+//     const double MOUTH_CLOSE_ANGLE = 0.0;
+//     unsigned long lastMouthUpdate = 0;
+//     const unsigned long MOUTH_UPDATE_INTERVAL = 100;
 
-protected:
-    void updateMotion() override {
-        unsigned long currentTime = millis();
-        if (currentTime - lastMouthUpdate >= MOUTH_UPDATE_INTERVAL) {
-            bool shouldOpen = messageProcessor.getMouthOpen();
-            double targetAngle = shouldOpen ? MOUTH_OPEN_ANGLE : MOUTH_CLOSE_ANGLE;
-            krs.setPos(MOUTH_SERVO_ID, krs.degPos(targetAngle));
-            lastMouthUpdate = currentTime;
-        }
-    }
-};
+// protected:
+//     void updateMotion() override {
+//         unsigned long currentTime = millis();
+//         if (currentTime - lastMouthUpdate >= MOUTH_UPDATE_INTERVAL) {
+//             bool shouldOpen = messageProcessor.getMouthOpen();
+//             double targetAngle = shouldOpen ? MOUTH_OPEN_ANGLE : MOUTH_CLOSE_ANGLE;
+//             krs.setPos(MOUTH_SERVO_ID, krs.degPos(targetAngle));
+//             lastMouthUpdate = currentTime;
+//         }
+//     }
+// };
 
 // グローバルインスタンス
 CrushBody body;
-CrushMouth mouth;
+//CrushMouth mouth;
 //WiFiClient CrushMain::currentClient;
 
 void setup() {
