@@ -8,9 +8,9 @@ WiFiConnection wifiConnection;
 MessageProcessor messageProcessor;
 
 // サーボ設定
-const byte EN_PIN = 16;
-const byte RX_PIN = 17;
-const byte TX_PIN = 5;
+const byte EN_PIN = 5;
+const byte RX_PIN = 16;
+const byte TX_PIN = 17;
 //const long BAUDRATE = 115200;
 const long BAUDRATE = 1250000;
 const int TIMEOUT = 20;
@@ -58,6 +58,9 @@ void loop() {
                         int pos;
 
                        case CrushMode::SERVO_OFF:
+                            for (int i = 0; i < 7; ++i) {
+                                krs.setFree(i);//変換したデータをID:0に送る
+                            }
                            // サーボオフ
 
                            break;
@@ -75,7 +78,7 @@ void loop() {
                             int pos_i;
                             int pos_f;
                             
-                        pos_i = krs.degPos(45);  //90 x100deg をポジションデータに変換
+                        pos_i = krs.degPos(30);  //90 x100deg をポジションデータに変換
                         for (int i = 0; i < 5; ++i) {
                             while (krs.setPos(i, pos_i) == -1) {
                                 delay(1);
@@ -83,7 +86,7 @@ void loop() {
                         }
                             delay(500);
                             
-                        pos_i = krs.degPos(-45);  //90 x100deg をポジションデータに変換
+                        pos_i = krs.degPos(-30);  //90 x100deg をポジションデータに変換
                         for (int i = 0; i < 5; ++i) {
                                                while (krs.setPos(i, pos_i) == -1) {
                                 delay(1);

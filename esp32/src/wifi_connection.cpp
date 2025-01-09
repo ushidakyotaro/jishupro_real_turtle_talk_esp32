@@ -9,12 +9,14 @@ WiFiConnection::WiFiConnection()
 
 bool WiFiConnection::begin() {
     Serial.begin(115200);
-    if (connectToWiFi(HOME_SSID)) {
-        isUTokyoWiFi = false;
+    // UTokyo WiFiを先に試行
+    if (connectToWiFi(UTOKYO_SSID, true)) {
+        isUTokyoWiFi = true;
         server.begin();
         return true;
-    } else if (connectToWiFi(UTOKYO_SSID, true)) {
-        isUTokyoWiFi = true;
+    // 次にホームWiFiを試行
+    } else if (connectToWiFi(HOME_SSID)) {
+        isUTokyoWiFi = false;
         server.begin();
         return true;
     }

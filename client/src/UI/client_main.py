@@ -197,6 +197,44 @@ class RobotControlUI:
         # 接続設定
         self.select_location()
 
+        # 接続状態管理用の変数
+        self.is_manually_disconnected = False
+        
+        # 接続管理セクションの作成
+        self.create_connection_section()
+
+    def create_connection_section(self):
+        # 接続管理ボタンを左フレームに追加
+        conn_frame = ttk.LabelFrame(self.left_frame, text="接続管理", padding=10)
+        conn_frame.pack(fill="x", pady=(0, 10))
+        
+        self.connect_button = ttk.Button(conn_frame, text="接続", command=self.manual_connect)
+        self.connect_button.pack(fill="x", pady=2)
+        
+        self.disconnect_button = ttk.Button(conn_frame, text="切断", command=self.manual_disconnect)
+        self.disconnect_button.pack(fill="x", pady=2)
+        
+        # ボタンの初期状態を設定
+        self.disconnect_button.state(['disabled'])
+
+    def manual_connect(self):
+        if self.is_manually_disconnected:
+            self.is_manually_disconnected = False
+            self.connect_to_esp32()
+            if self.client and self.client.connected:
+                self.connect_button.state(['disabled'])
+                self.disconnect_button.state(['!disabled'])
+                messagebox.showinfo("接続", "ESP32に再接続しました")
+
+    def manual_disconnect(self):
+        if self.client and self.client.connected:
+            self.client.disconnect()
+            self.is_manually_disconnected = True
+            self.connect_button.state(['!disabled'])
+            self.disconnect_button.state(['disabled'])
+            self.status_label.config(text="手動切断")
+            messagebox.showinfo("切断", "ESP32との接続を切断しました")
+
     def create_status_section(self):
         # ステータス表示部分
         status_frame = ttk.LabelFrame(self.left_frame, text="ステータス", padding=10)
@@ -299,9 +337,11 @@ class RobotControlUI:
 
     def update_status(self):
         if not self.client or not self.client.connected:
-            self.status_label.config(text="未接続")
-            # 再接続を試みる
-            self.handle_disconnection()
+            if not self.is_manually_disconnected:
+                self.status_label.config(text="未接続")
+                self.connect_button.state(['!disabled'])
+                self.disconnect_button.state(['disabled'])
+                self.handle_disconnection()
             return
 
         status = self.client.get_status()
@@ -316,7 +356,8 @@ class RobotControlUI:
             )
         else:
             self.status_label.config(text="ステータスの取得に失敗")
-            self.handle_disconnection()
+            if not self.is_manually_disconnected:
+                self.handle_disconnection()
 
     def select_location(self):
         location_window = tk.Toplevel(self.root)
@@ -345,6 +386,8 @@ class RobotControlUI:
 
         if self.client.connect():
             self.connection_retry_count = 0
+            self.connect_button.state(['disabled'])
+            self.disconnect_button.state(['!disabled'])
             messagebox.showinfo("接続成功", "ESP32に接続しました")
             self.start_status_update()
         else:
@@ -354,10 +397,10 @@ class RobotControlUI:
                 f"ESP32に接続できませんでした。\n試行回数: {self.connection_retry_count}/{self.max_connection_retries}\n再試行しますか？"
             )
             if retry:
-                # 再試行前に少し待機
                 self.root.after(1000, self.connect_to_esp32)
             else:
                 self.root.quit()
+
 
     def start_status_update(self):
         def update():
