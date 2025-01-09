@@ -8,12 +8,15 @@ WiFiConnection::WiFiConnection()
 }
 
 bool WiFiConnection::begin() {
-    if (connectToWiFi(HOME_SSID)) {
-        isUTokyoWiFi = false;
+    Serial.begin(115200);
+    // UTokyo WiFiを先に試行
+    if (connectToWiFi(UTOKYO_SSID, true)) {
+        isUTokyoWiFi = true;
         server.begin();
         return true;
-    } else if (connectToWiFi(UTOKYO_SSID, true)) {
-        isUTokyoWiFi = true;
+    // 次にホームWiFiを試行
+    } else if (connectToWiFi(HOME_SSID)) {
+        isUTokyoWiFi = false;
         server.begin();
         return true;
     }
@@ -21,6 +24,8 @@ bool WiFiConnection::begin() {
 }
 
 bool WiFiConnection::connectToWiFi(const char* ssid, bool isUTokyo) {
+    Serial.print("Attempting to connect to: ");
+    Serial.println(ssid);
     if (isUTokyo) {
         WiFi.disconnect(true);
         WiFi.mode(WIFI_STA);
@@ -41,7 +46,15 @@ bool WiFiConnection::connectToWiFi(const char* ssid, bool isUTokyo) {
         attempts++;
     }
     
-    return WiFi.status() == WL_CONNECTED;
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("WiFi Connected Successfully!");
+        Serial.print("Connected to SSID: ");
+        Serial.println(ssid);
+        Serial.print("IP Address: ");
+        Serial.println(WiFi.localIP());
+        return true;
+    }
+    return false;
 }
 
 bool WiFiConnection::tryAlternativeNetwork() {
@@ -73,11 +86,13 @@ bool WiFiConnection::reconnect() {
     }
     
     // 失敗したら別のネットワークを試す
+    Serial.println("Trying alternative network...");
     if (tryAlternativeNetwork()) {
         restartServer();
         return true;
     }
     
+    Serial.println("Reconnection failed");
     return false;
 }
 

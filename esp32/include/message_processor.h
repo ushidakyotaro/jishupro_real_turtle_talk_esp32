@@ -14,7 +14,7 @@ enum class CrushMode {
 enum class WingUpMode {
     RIGHT = 1,
     LEFT = 2,
-    BOTH = 3
+    BOTH = 0
 };
 
 struct SwimParameters {
@@ -22,6 +22,7 @@ struct SwimParameters {
     float wingDeg;
     float maxAngleDeg;
     float yRate;
+    bool isBackward;
     SwimParameters() : periodSec(0), wingDeg(0), maxAngleDeg(0), yRate(0) {}
 };
 

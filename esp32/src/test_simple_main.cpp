@@ -61,7 +61,6 @@ protected:
     CrushMode previousMode;
 
     SwimParameters currentParams;  // 追加：現在のパラメータを保持
-    WingUpMode currentWingMode;
 
     ErrorStatus errorStatus;
     
@@ -176,10 +175,8 @@ public:
                     // メッセージを受信したときだけモーション更新
                     auto mode = messageProcessor.getCurrentMode();
                     auto params = messageProcessor.getCurrentParams();
-                    auto wingMode = messageProcessor.getCurrentWingMode();
                     currentMode = mode;
                     currentParams = params;  // パラメータを保存
-                    currentWingMode = wingMode;  // パラメータを保存
 
                     // デバッグ出力を追加
                     Serial.printf("Mode: %d, Period: %.2f, Wing: %.1f, Max: %.1f, Y: %.2f\n",
@@ -306,6 +303,7 @@ protected:
             // その他の初期化処理
         }
         
+        
         switch (currentMode) {
             case CrushMode::SERVO_OFF:
                 setServoOff();
@@ -320,7 +318,7 @@ protected:
                 handleSwimMode(currentParams);
                 break;
             case CrushMode::RAISE:
-                handleRaiseMode(currentWingMode);
+                handleRaiseMode(currentParams);
                 break;
             case CrushMode::EMERGENCY_SURFACE:
                 handleEmergencySurface();
@@ -396,16 +394,52 @@ private:
         }
     }
 
+    // void handleInitMode() {
+    //     // if (currentMode == CrushMode::INIT_POSE) {
+    //         int pos = krs.degPos(0);
+    //         for (int i = 1; i < SERVO_NUM; ++i) {
+    //             while (krs.setPos(i, pos) == -1) {
+    //                 delay(1);
+    //             }
+    //         }
+    //     }
         void handleInitMode() {
         // if (currentMode == CrushMode::INIT_POSE) {
             int positions[SERVO_NUM];
-            int speeds[SERVO_NUM] = {30, 30, 30, 30, 30, 30, 30};
             int pos = krs.degPos(0);
             for (int i = 1; i < SERVO_NUM; ++i) {
                 positions[i] = pos;
             }
-            sendVec2ServoPos(positions, speeds);
+            sendVec2ServoPos(positions, nullptr);
         }
+
+    // void handleStayMode(const SwimParameters& params) {
+    //     // シンプルな上下運動のみを実装///////////////////////////
+    //     static bool isUp = false;
+    //     const int UP_ANGLE = 30;    // 上げる角度
+    //     const int DOWN_ANGLE = -30;  // 下げる角度
+        
+    //     // 1秒ごとに切り替え
+    //     if (millis() - cycleTimer.startTime > 1000) {
+    //         isUp = !isUp;  // 状態を反転
+    //         cycleTimer.reset();
+            
+    //         int targetAngle = isUp ? UP_ANGLE : DOWN_ANGLE;
+            
+    //         // すべてのサーボに同じ角度を設定
+    //         int positions[SERVO_NUM] = {0};  // 0番は使わない
+    //         for(int i = 1; i < SERVO_NUM; i++) {
+    //             positions[i] = krs.degPos(targetAngle);
+    //         }
+            
+    //         int speeds[SERVO_NUM] = {127, 127, 127, 127, 127, 127, 127};
+    //         sendVec2ServoPos(positions, speeds);
+            
+    //         // デバッグ出力
+    //         Serial.printf("Stay Mode: Moving to angle %d\n", targetAngle);
+    //     }
+
+    // }
 
     void handleStayMode(const SwimParameters& params) {
         // 固定値の設定
@@ -414,16 +448,19 @@ private:
         
         // 現在の時間から角度を計算
         unsigned long currentTime = millis();
-        //double timeRatio = fmod(currentTime, PERIOD_MS) / PERIOD_MS;  // 0.0 ~ 1.0の値
-        //double currentAngle = MAX_ANGLE * sin(TWO_PI * timeRatio);    // -30 ~ +30度
-            // paramsを使用して処理
-    double timeRatio = fmod(currentTime, params.periodSec * 1000.0) / (params.periodSec * 1000.0);
-    double currentAngle = params.maxAngleDeg * sin(TWO_PI * timeRatio);
-
+        double timeRatio = fmod(currentTime, PERIOD_MS) / PERIOD_MS;  // 0.0 ~ 1.0の値
+        double currentAngle = MAX_ANGLE * sin(TWO_PI * timeRatio);    // -30 ~ +30度
+        
         // サーボの位置と速度を設定
         int positions[SERVO_NUM] = {0};  // 0番は使わない
         int speeds[SERVO_NUM] = {127, 127, 127, 127, 127, 127, 127};  // 一定速度
         
+        // // 全サーボ（1-6番）に同じ角度を設定
+        // for(int i = 1; i < SERVO_NUM; i++) {
+        //     positions[i] = krs.degPos(currentAngle);
+        // }
+        // positions[i] = krs.degPos(currentAngle);
+
             // wingdegをラジアンに変換
             double WING_DEG = 0.0;
 
@@ -483,8 +520,8 @@ private:
 //     // 各サーボに角度を設定
 //     positions[1] = krs.degPos(angle1);  // 右の上下
 //     positions[2] = krs.degPos(angle2);  // 右の前後
-//     positions[4] = krs.degPos(-angle1);  // 左の上下
-//     positions[5] = krs.degPos(-angle2);  // 左の前後
+//     positions[4] = krs.degPos(angle1);  // 左の上下
+//     positions[5] = krs.degPos(angle2);  // 左の前後
     
 //     // 3番と6番は0度に維持
 //     positions[3] = krs.degPos(0);
@@ -504,20 +541,12 @@ private:
 
 void handleSwimMode(const SwimParameters& params) {
     // 固定値の設定
-    // const double PERIOD_MS = 2000.0;      // 2秒周期
-    // const double MAX_ANGLE = 20.0;        // 振幅±30度
-    // const double WING_DEG = 20.0;         // 翼角度
-    // const double RIGHT_RATE = 1.0; //1.2       // 右の振幅率（1.0より大きいと右に曲がる）
-    // const double LEFT_RATE = 1.0;  //0.8       // 左の振幅率
-    // const double WING_ROTATION = 30.0;    // 翼の回転角度
-
-    double PERIOD_MS = params.periodSec * 1000.0;      // 2秒周期
-    double MAX_ANGLE = params.maxAngleDeg;        // 振幅±30度
-    double WING_DEG = params.wingDeg;         // 翼角度
-    double RIGHT_RATE = (1.0 + params.yRate) / 2.0; //1.2       // 右の振幅率（1.0より大きいと右に曲がる）
-    double LEFT_RATE =  (1.0 - params.yRate) / 2.0;  //0.8       // 左の振幅率
-    double WING_ROTATION = 30.0;    // 翼の回転角度
-
+    const double PERIOD_MS = 2000.0;      // 2秒周期
+    const double MAX_ANGLE = 20.0;        // 振幅±30度
+    const double WING_DEG = 20.0;         // 翼角度
+    const double RIGHT_RATE = 1.0; //1.2       // 右の振幅率（1.0より大きいと右に曲がる）
+    const double LEFT_RATE = 1.0;  //0.8       // 左の振幅率
+    const double WING_ROTATION = 30.0;    // 翼の回転角度
     
     // 現在の時間から基本角度を計算
     unsigned long currentTime = millis();
@@ -535,16 +564,8 @@ void handleSwimMode(const SwimParameters& params) {
     
     // 3番と6番サーボの制御（前進動作用）
     double rotationAngle = 0.0;
-    if (!params.isBackward) {  // 前進の場合
-        // baseAngle2が正から負に変化する領域（前から後ろに動かすとき）で90度
-        if (cos(TWO_PI * timeRatio) < 0) {
-            rotationAngle = WING_ROTATION;
-        }
-    } else {  // 後退の場合
-        // baseAngle2が負から正に変化する領域（後ろから前に動かすとき）で90度
-        if (cos(TWO_PI * timeRatio) > 0) {
-            rotationAngle = WING_ROTATION;
-        }
+    if (cos(TWO_PI * timeRatio) < 0) {  // 後ろに動かすとき
+        rotationAngle = WING_ROTATION;
     }
     
     int positions[SERVO_NUM] = {0};
@@ -643,10 +664,10 @@ void handleSwimMode(const SwimParameters& params) {
 
 
 
-void handleRaiseMode(const WingUpMode& wingMode) {
+void handleRaiseMode(const SwimParameters& params) {
     unsigned long currentTime = millis();
     int positions[SERVO_NUM] = {0};  // すべて0で初期化
-    int speeds[SERVO_NUM] = {30, 30, 30, 30, 30, 30, 30};  // servo2,5のみ速度80
+    int speeds[SERVO_NUM] = {127, 127, 30, 127, 127, 30, 127};  // servo2,5のみ速度80
     
     // servo1,3,4,6は0度
     positions[1] = krs.degPos(0);
@@ -654,29 +675,9 @@ void handleRaiseMode(const WingUpMode& wingMode) {
     positions[4] = krs.degPos(0);
     positions[6] = krs.degPos(0);
     
-    // // servo2,5は30度
-    // positions[2] = krs.degPos(20);
-    // positions[5] = krs.degPos(-20);
-        // WingUpModeに応じてヒレの位置を設定
-    
-    
-    switch(wingMode) {
-        case WingUpMode::RIGHT:
-            positions[2] = krs.degPos(20);  // 右のヒレのみ上げる
-            positions[5] = krs.degPos(0);
-            break;
-            
-        case WingUpMode::LEFT:
-            positions[5] = krs.degPos(-20);  // 左のヒレのみ上げる
-            positions[2] = krs.degPos(0);
-            break;
-            
-        case WingUpMode::BOTH:
-            positions[2] = krs.degPos(20);   // 両方のヒレを上げる
-            positions[5] = krs.degPos(-20);
-            break;
-    }
-    
+    // servo2,5は30度
+    positions[2] = krs.degPos(20);
+    positions[5] = krs.degPos(-20);
     
     sendVec2ServoPos(positions, speeds);
     
@@ -762,8 +763,7 @@ void handleEmergencySurface() {
         // フェーズ1: 3秒間STAYモードで浮上動作
         SwimParameters stayParams;
         stayParams.periodSec = 1.0;     // 1秒周期
-        stayParams.maxAngleDeg = 20.0;  // 大きめの角度で浮上
-        stayParams.wingDeg = 0.0;       // 真上に動かす
+        stayParams.maxAngleDeg = 0.0;  // 大きめの角度で浮上
         handleStayMode(stayParams);
         Serial.println("Emergency Phase 1: STAY mode");
     } else if (elapsedTime <= EMERGENCY_STAY_DURATION + 1000) {  // +1秒
