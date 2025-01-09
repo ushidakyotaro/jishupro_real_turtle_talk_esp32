@@ -29,9 +29,9 @@ class SwimCommand(enum.IntEnum):
 
 # WingUpMode Enum
 class WingUpMode(enum.IntEnum):
-    RIGHT = 0
-    LEFT = 1
-    BOTH = 2
+    RIGHT = 1
+    LEFT = 2
+    BOTH = 0
 
 
 # SwimParameters Dataclass
@@ -136,10 +136,18 @@ class CrushClient:
         period_bytes = struct.pack('f', params.period_sec)
         wing_bytes = struct.pack('h', int(params.wing_deg * 10))
         max_angle_bytes = struct.pack('h', int(params.max_angle_deg * 10))
-        y_rate_byte = bytes([int(params.y_rate * 100)])
+        y_rate_byte = struct.pack('b',int(params.y_rate * 100))
         backward_byte = bytes([1 if params.isBackward else 0])
         
         message = bytes([0x20]) + period_bytes + wing_bytes + max_angle_bytes + y_rate_byte + backward_byte
+        response = self._send_message(message)
+        if not response:
+            self.cleanup()
+            return False
+        return response[0] & 0x80 == 0
+    
+    def set_wing_up(self, mode: WingUpMode) -> bool:
+        message = bytes([0x30 | mode.value])  # 新しいコマンド0x30を使用
         response = self._send_message(message)
         if not response:
             self.cleanup()
@@ -282,24 +290,28 @@ class RobotControlUI:
         ttk.Label(self.parameter_frame, text="周期 (秒)").pack()
         self.period_scale = ttk.Scale(self.parameter_frame, from_=0.5, to=3.0,
                                     orient="horizontal")
+        self.period_scale.set(3.0)  # 初期値を3.0秒に設定
         self.period_scale.pack(fill="x")
         
         # 羽ばたき角度
         ttk.Label(self.parameter_frame, text="羽ばたき角度 (度)").pack()
         self.wing_scale = ttk.Scale(self.parameter_frame, from_=0, to=90,
                                   orient="horizontal")
+        self.wing_scale.set(0.0)  # 初期値を0度に設定
         self.wing_scale.pack(fill="x")
         
         # 最大角度
         ttk.Label(self.parameter_frame, text="最大角度 (度)").pack()
         self.max_angle_scale = ttk.Scale(self.parameter_frame, from_=0, to=45,
                                        orient="horizontal")
+        self.max_angle_scale.set(20.0)  # 初期値を20度に設定
         self.max_angle_scale.pack(fill="x")
         
         # 左右バランス
         ttk.Label(self.parameter_frame, text="左右バランス").pack()
         self.balance_scale = ttk.Scale(self.parameter_frame, from_=-1.0, to=1.0,
                                      orient="horizontal")
+        self.balance_scale.set(0.0)  # 初期値を0.0に設定
         self.balance_scale.pack(fill="x")
         
         # 前進/後退切り替え
@@ -310,6 +322,44 @@ class RobotControlUI:
         # 適用ボタン
         ttk.Button(self.parameter_frame, text="パラメータを適用",
                   command=self.apply_parameters).pack(pady=10)
+        
+        # 方向制御ボタンのラベルとフレーム
+        ttk.Label(self.parameter_frame, text="方向制御（スライダー連動）").pack(pady=(10, 5))
+        control_frame = ttk.Frame(self.parameter_frame)
+        control_frame.pack(pady=5)
+        
+        # 上ボタン（前進）
+        ttk.Button(control_frame, text="↑", command=lambda: self.update_direction("forward")).grid(row=0, column=1)
+        # 左ボタン
+        ttk.Button(control_frame, text="←", command=lambda: self.update_direction("left")).grid(row=1, column=0)
+        # 中央ボタン（STAY）
+        ttk.Button(control_frame, text="・", command=lambda: self.update_direction("stay")).grid(row=1, column=1)
+        # 右ボタン
+        ttk.Button(control_frame, text="→", command=lambda: self.update_direction("right")).grid(row=1, column=2)
+        # 下ボタン（後退）
+        ttk.Button(control_frame, text="↓", command=lambda: self.update_direction("backward")).grid(row=2, column=1)
+
+
+        ttk.Label(self.parameter_frame, text="ヒレ上げ制御").pack(pady=(10, 5))
+        wing_control_frame = ttk.Frame(self.parameter_frame)
+        wing_control_frame.pack(pady=5)
+        ttk.Button(wing_control_frame, text="左ヒレ↑", 
+                command=lambda: self.set_wing_up(WingUpMode.LEFT)).grid(row=0, column=0, padx=2)
+        ttk.Button(wing_control_frame, text="両ヒレ↑", 
+                command=lambda: self.set_wing_up(WingUpMode.BOTH)).grid(row=0, column=1, padx=2)
+        ttk.Button(wing_control_frame, text="右ヒレ↑", 
+                command=lambda: self.set_wing_up(WingUpMode.RIGHT)).grid(row=0, column=2, padx=2)
+
+
+    def set_wing_up(self, mode: WingUpMode):
+        """ヒレ上げモードを設定する"""
+        if not self.client or not self.client.connected:
+            messagebox.showerror("エラー", "ESP32に接続されていません")
+            return
+        
+        # RAISEモードに設定してからWingUpModeを送信
+        if self.client.set_mode(CrushMode.RAISE):
+            self.client.set_wing_up(mode)
 
     def apply_parameters(self):
         params = SwimParameters(
@@ -321,6 +371,45 @@ class RobotControlUI:
         )
         if self.client:
             self.client.send_parameters(params)
+    
+
+    def update_direction(self, direction):
+        """
+        方向ボタンが押されたときにスライダーの値を更新し、パラメータを適用する
+        """
+        # wing_degの現在値を取得
+        current_wing_deg = self.wing_scale.get()
+        
+        if direction == "stay":
+            # STAYの場合は羽ばたき角度を0に
+            self.wing_scale.set(0.0)
+            self.balance_scale.set(0.0)
+            self.backward_var.set(False)
+        
+        elif direction == "forward":
+            # 前進の場合は現在の羽ばたき角度を維持
+            self.balance_scale.set(0.0)
+            self.backward_var.set(False)
+        
+        elif direction == "backward":
+            # 後退の場合は現在の羽ばたき角度を維持
+            self.balance_scale.set(0.0)
+            self.backward_var.set(True)
+        
+        elif direction == "left":
+            # 左旋回の場合
+            self.balance_scale.set(-1.0)
+            self.backward_var.set(False)
+        
+        elif direction == "right":
+            # 右旋回の場合
+            self.balance_scale.set(1.0)
+            self.backward_var.set(False)
+        
+        # パラメータを適用
+        self.apply_parameters()
+        
+
 
     def set_mode(self, mode: CrushMode):
         if not self.client or not self.client.connected:
@@ -346,14 +435,31 @@ class RobotControlUI:
 
         status = self.client.get_status()
         if status:
-            self.status_label.config(
-                text=(
-                    f"現在のモード: {status['mode'].name}\n"
-                    f"角度: {status['current_angle']}\xb0\n"
-                    f"WiFi切断: {status['wifi_disconnected']}\n"
-                    f"角度範囲外: {status['angle_out_of_range']}"
-                )
+            # 現在のパラメータ値を取得
+            current_params = {
+                'period': self.period_scale.get(),
+                'wing': self.wing_scale.get(),
+                'max_angle': self.max_angle_scale.get(),
+                'balance': self.balance_scale.get(),
+                'backward': "有効" if self.backward_var.get() else "無効"
+            }
+            
+            # ステータステキストを更新
+            status_text = (
+                f"現在のモード: {status['mode'].name}\n"
+                f"角度: {status['current_angle']}\xb0\n"
+                f"WiFi切断: {status['wifi_disconnected']}\n"
+                f"角度範囲外: {status['angle_out_of_range']}\n"
+                f"\n"  # 空行を追加して区切り
+                f"現在のパラメータ:\n"
+                f"周期: {current_params['period']:.1f}秒\n"
+                f"羽ばたき角度: {current_params['wing']:.1f}度\n"
+                f"最大角度: {current_params['max_angle']:.1f}度\n"
+                f"左右バランス: {current_params['balance']:.2f}\n"
+                f"後退モード: {current_params['backward']}"
             )
+            
+            self.status_label.config(text=status_text)
         else:
             self.status_label.config(text="ステータスの取得に失敗")
             if not self.is_manually_disconnected:

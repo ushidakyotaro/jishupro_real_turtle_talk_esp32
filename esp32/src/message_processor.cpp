@@ -73,25 +73,30 @@ bool MessageProcessor::processMessage(WiFiClient& client) {
             break;
 
         case 0x03: // 翼制御
-            if (client.available() >= 2) {
-                uint8_t angleBytes[2];
-                size_t bytesRead = client.readBytes(angleBytes, 2);
-                if (bytesRead != 2) {
-                    sendResponse(client, 0xE3);
-                    break;
-                }
+            // if (client.available() >= 2) {
+            //     uint8_t angleBytes[2];
+            //     size_t bytesRead = client.readBytes(angleBytes, 2);
+            //     if (bytesRead != 2) {
+            //         sendResponse(client, 0xE3);
+            //         break;
+            //     }
 
-                float angle = bytesToInt16(angleBytes) / 10.0f;
-                if (angle >= -45.0 && angle <= 45.0 && subCommand >= 1 && subCommand <= 3) {
-                    currentWingMode = static_cast<WingUpMode>(subCommand);
-                    currentParams.wingDeg = angle;
-                    sendResponse(client, 0x00);
-                } else {
-                    sendResponse(client, 0xE2);
-                }
-            } else {
-                sendResponse(client, 0xE3);
-            }
+            //     float angle = bytesToInt16(angleBytes) / 10.0f;
+            //     if (angle >= -45.0 && angle <= 45.0 && subCommand >= 1 && subCommand <= 3) {
+            //         currentWingMode = static_cast<WingUpMode>(subCommand);
+            //         currentParams.wingDeg = angle;
+            //         sendResponse(client, 0x00);
+            //     } else {
+            //         sendResponse(client, 0xE2);
+            //     }
+            // } else {
+            //     sendResponse(client, 0xE3);
+            // }
+            // break;
+
+            //　左右のみ受信
+            currentWingMode = static_cast<WingUpMode>(subCommand);
+            sendResponse(client, 0x00);
             break;
 
         case 0x04: // 口制御
