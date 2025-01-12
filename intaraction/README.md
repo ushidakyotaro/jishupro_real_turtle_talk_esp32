@@ -1,19 +1,23 @@
 # AI Voice Chat Application
 
-このアプリケーションは、Gemini APIとVOICEVOXを使用して、ディズニーシーのタートルトークのキャラクター「クラッシュ」として会話するAIボイスチャットシステムです。
+このアプリケーションは、Gemini APIとAivis Speechを使用して、ディズニーシーのタートルトークのキャラクター「クラッシュ」として会話するAIボイスチャットシステムです。
 
 ## 必要条件
 
 - Python 3.8以上
-- VOICEVOX
+- Aivis Speech
 - Gemini API Key
 
 ## セットアップ手順
 
-1. VOICEVOXをインストールして起動
+1. Aivis Speechのセットアップ
 ```bash
-# VOICEVOXをダウンロードして起動してください
-# http://127.0.0.1:10101 でサーバーが起動している必要があります
+# 1. Aivis Speechをダウンロード
+https://aivis-project.com/ からダウンロード
+
+# 2. インストールして起動
+# 3. エンジンの起動を確認
+# ブラウザで http://127.0.0.1:10101 にアクセスして確認できます
 ```
 
 2. 必要なPythonパッケージをインストール
@@ -24,12 +28,12 @@ pip install -r requirements.txt
 3. 環境変数の設定
 `.env`ファイルをプロジェクトのルートディレクトリに作成し、以下の内容を追加：
 ```
-GEMINI_API=your_api_key_here
+GEMINI_API="your_api_key_here"
 ```
 
 ## 使用方法
 
-1. VOICEVOXを起動し、サーバーが立ち上がっていることを確認します。
+1. Aivis Speechを起動し、サーバーが立ち上がっていることを確認します。
 
 2. アプリケーションを起動：
 ```bash
@@ -43,14 +47,15 @@ python main.py
 
 ## 注意事項
 
-- VOICEVOXが起動していない場合、音声生成が失敗します
+- Aivis Speechが起動していない場合、音声生成が失敗します
 - インターネット接続が必要です
 - Gemini API Keyが正しく設定されていることを確認してください
 
 ## トラブルシューティング
 
 1. 音声が再生されない場合
-   - VOICEVOXが起動しているか確認
+   - Aivis Speechが起動しているか確認
+   - http://127.0.0.1:10101 にアクセスできるか確認
    - output.wavファイルが生成されているか確認
 
 2. API エラーが発生する場合
