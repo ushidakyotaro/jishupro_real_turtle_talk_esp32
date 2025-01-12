@@ -50,15 +50,15 @@ For ESP32 firmware development and testing:
 ### 3. Client Development
 For PC-side application:
 1. Install Python requirements:
-   ```bash
+```bash
    cd client
    python -m pip install -r requirements.txt
-   ```
+```
 2. Run the test client:
-   ```bash
-cd client/src/UI
-python client_main.py
-   ```
+```bash
+   cd client/src/UI
+   python client_main.py
+```
 
 ## Hardware Requirements
 ### Main Components
