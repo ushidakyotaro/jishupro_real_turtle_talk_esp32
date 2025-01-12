@@ -6,16 +6,16 @@ This directory contains the ESP32 firmware for the Crush robot project.
 ```plaintext
 esp32/
 ├── include/             # Shared header files
-│   ├── credentials.h
-│   └── credentials_template.h
+│   ├── credentials.h    # WiFi credentials
+│   ├── message_processor.h # Message processing
+│   ├── motion_patterns.h  # Motion definitions
+│   └── wifi_connection.h  # WiFi connection handling
 ├── lib/                 # Libraries
 │   └── IcsClass/       # Servo motor control
 ├── src/                # Main source code
 │   ├── main.cpp        # Main program
-│   └── sample_code.cpp # Example code
-├── test/               # Test programs
-│   ├── test_ics.cpp    # Servo motor test
-│   └── test_wifi_TCP.cpp # WiFi/TCP test
+│   ├── message_processor.cpp  # Message processing implementation
+│   └── wifi_connection.cpp    # WiFi connection implementation
 └── platformio.ini      # PlatformIO configuration
 ```
 
@@ -49,8 +49,12 @@ esp32/
 
 ### 3. Hardware Connection
 1. Connect ESP32 to your computer via USB
-2. Connect servo motors to their respective pins (pin configuration details to be added)
-3. Ensure proper power supply for servo motors
+2. Connect servo motors to their respective pins
+3. Connect ICS board to ESP32:
+   - EN Pin: GPIO5
+   - RX Pin: GPIO16
+   - TX Pin: GPIO17
+4. Ensure proper power supply for servo motors
 
 ### 4. Building and Uploading
 1. Open the project in VSCode with PlatformIO
@@ -88,7 +92,7 @@ pio run -e esp32dev_test_wifi -t upload
 3. Check the assigned IP address
 4. Run the Python client script:
 ```bash
-python client_test_wifi_TCP.py
+python ../client/test/client_test_wifi_TCP.py
 ```
 
 5. LED indicators will show the connection status:
