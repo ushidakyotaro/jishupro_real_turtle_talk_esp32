@@ -1,0 +1,5 @@
+soundfile
+requests
+google-generativeai
+playsound
+python-dotenv
