@@ -8,6 +8,7 @@ import tkinter as tk
 from os.path import abspath, exists
 import threading
 
+
 from dotenv import load_dotenv
 import os
 
@@ -43,7 +44,9 @@ class AivisAdapter:
 
 
 # 自分の Gemini API キーをここに貼り付ける
+
 genai.configure(gemini_api_key)
+
 
 def get_llm_response(user_input, context):
     model = genai.GenerativeModel('gemini-pro')
