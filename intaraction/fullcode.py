@@ -43,7 +43,7 @@ class AivisAdapter:
 
 
 # 自分の Gemini API キーをここに貼り付ける
-genai.configure(gemini_api_key)
+genai.configure(api_key=gemini_api_key)
 
 def get_llm_response(user_input, context):
     model = genai.GenerativeModel('gemini-pro')
