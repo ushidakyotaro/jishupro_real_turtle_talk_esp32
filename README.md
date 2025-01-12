@@ -11,14 +11,22 @@ This project aims to replicate the sea turtle character and turtle talk experien
 ## Project Structure
 ```plaintext
 jishupro_esp32/
-├── esp32/          # ESP32 firmware and tests
-│   ├── include/    # Header files
-│   ├── src/        # Main source code
-│   ├── test/       # Test code
-│   └── README.md   # ESP32-specific documentation
 ├── client/         # PC-side application
-│   └── src/        # Client source code
-└── README.md       # This file
+│   └── src/UI/     # Client user interface
+│       └── client_main.py
+└── esp32/          # ESP32 firmware
+    ├── include/    # Header files
+    │   ├── credentials.h
+    │   ├── message_processor.h
+    │   ├── motion_patterns.h
+    │   └── wifi_connection.h
+    ├── lib/        # Libraries
+    │   └── IcsClass/    # Servo motor control library
+    ├── src/        # Main source code
+    │   ├── main.cpp
+    │   ├── message_processor.cpp
+    │   └── wifi_connection.cpp
+    └── platformio.ini   # PlatformIO configuration
 ```
 
 ## Quick Start Guide
@@ -48,7 +56,8 @@ For PC-side application:
    ```
 2. Run the test client:
    ```bash
-   python client_test_wifi_TCP.py
+cd client/src/UI
+python client_main.py
    ```
 
 ## Hardware Requirements
@@ -62,7 +71,6 @@ For PC-side application:
 ### Servo Motor Configuration
 | ID | Location | Movement | Angle Limits |
 |----|----------|----------|--------------|
-| 0  | Mouth    | Open/Close | TBD |
 | 1  | Right Pitch (Base) | Up/Down | TBD |
 | 2  | Right Roll | Front/Back | TBD |
 | 3  | Right Yaw | Yaw | TBD |

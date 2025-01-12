@@ -1,46 +1,85 @@
+# ICS Class Library
 
-This directory is intended for project specific (private) libraries.
-PlatformIO will compile them to static libraries and link into executable file.
+This directory contains the ICS (Interactive Communication System) library for controlling Kondo Kagaku servo motors.
 
-The source code of each library should be placed in an own separate directory
-("lib/your_library_name/[here are source files]").
+## Overview
 
-For example, see a structure of the following two libraries `Foo` and `Bar`:
+The ICS library provides communication and control capabilities for KRS series servo motors using the ICS3.5/3.6 protocol.
 
-|--lib
-|  |
-|  |--Bar
-|  |  |--docs
-|  |  |--examples
-|  |  |--src
-|  |     |- Bar.c
-|  |     |- Bar.h
-|  |  |- library.json (optional, custom build options, etc) https://docs.platformio.org/page/librarymanager/config.html
-|  |
-|  |--Foo
-|  |  |- Foo.c
-|  |  |- Foo.h
-|  |
-|  |- README --> THIS FILE
-|
-|- platformio.ini
-|--src
-   |- main.c
+## Library Files
 
-and a contents of `src/main.c`:
+### IcsBaseClass
+- **IcsBaseClass.h**: Base class header defining core functionality
+- **IcsBaseClass.cpp**: Implementation of base ICS communication functions
+
+### IcsHardSerialClass
+- **IcsHardSerialClass.h**: Hardware serial implementation header
+- **IcsHardSerialClass.cpp**: Implementation using hardware UART
+
+## Core Features
+
+### Servo Control Functions
+- Position control (-135.0° to +135.0°)
+- Free (power off) mode
+- Current, speed, and temperature monitoring
+- Stretch (holding power) adjustment
+
+### Communication
+- Baud rates: 115200, 625000, 1250000 bps
+- Hardware serial (UART) communication
+- Error checking and handling
+- Timeout management
+
+## Usage Example
+
+```cpp
+// Initialize ICS communication
+IcsHardSerialClass krs(&Serial2, EN_PIN, 115200, 100);
+
+// Move servo to position
+krs.setPos(1, 7500);  // ID:1, Center position
+
+// Read servo parameters
+int current = krs.getCur(1);  // Get current
+int temp = krs.getTmp(1);     // Get temperature
 ```
-#include <Foo.h>
-#include <Bar.h>
 
-int main (void)
-{
-  ...
-}
+Important Parameters
+Servo Configuration
 
-```
+ID Range: 0-31
+Position Range: 3500-11500 (7500 center)
+Angle Range: -135.0° to +135.0°
+Speed Range: 1-127
+Stretch Range: 1-127
+Current Limit: 1-63
+Temperature Limit: 1-127
 
-PlatformIO Library Dependency Finder will find automatically dependent
-libraries scanning project source files.
+Pin Configuration
+cppCopyconst byte EN_PIN = 5;   // Enable pin
+const byte RX_PIN = 16;  // UART RX pin
+const byte TX_PIN = 17;  // UART TX pin
+Function Reference
+Core Functions
 
-More information about PlatformIO Library Dependency Finder
-- https://docs.platformio.org/page/librarymanager/ldf.html
+setPos(): Set servo position
+setFree(): Set servo to free mode
+getPos(): Get current position
+getCur(): Get current value
+getTmp(): Get temperature
+getSpd(): Get speed
+setSpd(): Set speed
+setStretch(): Set stretch value
+
+Utility Functions
+
+degPos(): Convert degrees to position value
+posDeg(): Convert position to degrees
+maxMin(): Check value within limits
+
+Notes
+
+Position data is in 10-bit resolution
+Temperature increases are monitored for safety
+Built-in current limiting for motor protection
+

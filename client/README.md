@@ -12,6 +12,9 @@ The client application provides:
 ```plaintext
 client/
 ├── src/
+│   └── UI/
+│       └── client_main.py     # Main GUI application
+├── test/
 │   └── client_test_wifi_TCP.py  # WiFi connection test client
 ├── requirements.txt             # Python package requirements
 └── README.md                   # This file
@@ -53,6 +56,75 @@ client/
 4. Check the connection status:
    - ESP32's LED indicators will show the connection state
    - Messages will be echoed back from ESP32
+
+### 3. Runnning the Aplication
+1. Run the main client application:
+```bash
+cd src/UI
+python client_main.py
+```
+2. Select your location when prompted:
+- Home (IP: 10.1.100.158)
+- School (IP: 10.100.82.80)
+
+## User Interface Guide
+### Basic Controls
+
+- Connection Management
+
+   - Manual connect/disconnect buttons
+   - Connection status display
+   - Auto-reconnect on connection loss
+
+
+
+### Robot Control Modes
+
+- Main Modes
+
+   - サーボOFF (Servo Off)
+   - 初期位置 (Initial Position)
+   - 待機 (Stay)
+   - 泳ぐ (Swim)
+   - 手を上げる (Raise Flippers)
+   - 緊急停止 (Emergency Stop)
+
+### Swimming Mode Controls
+
+- Movement Parameters
+
+- Period: 0.5-3.0 seconds
+- Wing Angle: 0-90 degrees
+- Max Angle: 0-45 degrees
+- Balance: -1.0 to 1.0
+- Backward Mode toggle
+
+
+- Direction Controls
+
+   - ↑: Forward
+   - ↓: Backward
+   - ←: Turn left
+   - →: Turn right
+   - ・: Stay
+
+
+### Flipper Controls
+
+   - 左ヒレ↑: Raise left flipper
+   - 両ヒレ↑: Raise both flippers
+   - 右ヒレ↑: Raise right flipper
+
+
+
+### Status Display
+
+- Current mode
+- Current angle
+- WiFi connection status
+- Angle range status
+- Current parameter values
+
 
 ## Troubleshooting
 - Ensure both PC and ESP32 are on the same network

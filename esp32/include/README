@@ -1,39 +1,33 @@
+# Include Directory
 
-This directory is intended for project header files.
+This directory contains header files for the ESP32 firmware of the Crush robot project.
 
-A header file is a file containing C declarations and macro definitions
-to be shared between several project source files. You request the use of a
-header file in your project source file (C, C++, etc) located in `src` folder
-by including it, with the C preprocessing directive `#include'.
+## Files Overview
 
-```src/main.c
+### credentials.h
+- WiFi connection credentials
+- Created from `credentials_template.h`
+- Contains WiFi settings for both home and UTokyo networks
 
-#include "header.h"
+### message_processor.h
+- Message processing and communication protocol definitions
+- Handles TCP/IP communication between ESP32 and client
+- Defines message formats and command structures
 
-int main (void)
-{
- ...
-}
-```
+### motion_patterns.h
+- Robot motion pattern definitions
+- Contains parameters for swimming, turning, and other movements
+- Defines angle limits and servo configurations
 
-Including a header file produces the same results as copying the header file
-into each source file that needs it. Such copying would be time-consuming
-and error-prone. With a header file, the related declarations appear
-in only one place. If they need to be changed, they can be changed in one
-place, and programs that include the header file will automatically use the
-new version when next recompiled. The header file eliminates the labor of
-finding and changing all the copies as well as the risk that a failure to
-find one copy will result in inconsistencies within a program.
+### wifi_connection.h
+- WiFi connection handling
+- Manages network connections and reconnection logic
+- LED status indicator definitions
 
-In C, the usual convention is to give header files names that end with `.h'.
-It is most portable to use only letters, digits, dashes, and underscores in
-header file names, and at most one dot.
+## Important Constants
 
-Read more about using header files in official GCC documentation:
-
-* Include Syntax
-* Include Operation
-* Once-Only Headers
-* Computed Includes
-
-https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
+### ICS Serial Configuration
+```cpp
+const byte EN_PIN = 5;   // Enable pin
+const byte RX_PIN = 16;  // UART RX pin
+const byte TX_PIN = 17;  // UART TX pin
