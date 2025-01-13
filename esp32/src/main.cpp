@@ -556,7 +556,7 @@ void handleSwimMode(const SwimParameters& params) {
     positions[3] = krs.degPos(rotationAngle); // 右の回転
     positions[4] = krs.degPos(-leftAngle1);   // 左の上下
     positions[5] = krs.degPos(-leftAngle2);   // 左の前後
-    positions[6] = krs.degPos(rotationAngle); // 左の回転
+    positions[6] = krs.degPos(-rotationAngle); // 左の回転
     
     sendVec2ServoPos(positions, speeds);
     
