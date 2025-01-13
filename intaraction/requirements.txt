@@ -1,0 +1,5 @@
+soundfile
+requests
+google-generativeai
+playsound==1.2.2
+python-dotenv
